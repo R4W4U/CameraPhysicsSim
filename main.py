@@ -14,10 +14,41 @@ WORLD_TOP = 100
 
 def camera_thread():
     global latest_frame
+
     while running:
-        ret,frame = cam.read()
+        ret, frame = cam.read()
+
         if ret:
-            latest_frame = frame
+
+            frame = normalized_crop(
+                frame,
+                0.28,
+                0.23,
+                0.46,
+                0.48
+            )
+
+            # Convert BGR to HSV
+            hsv = cv2.cvtColor(
+                frame,
+                cv2.COLOR_BGR2HSV
+            )
+
+            # Blue color range
+            lower_blue = np.array([90, 50, 30])
+            upper_blue = np.array([140, 255, 255])
+
+            # Create blue mask
+            blue_mask = cv2.inRange(
+                hsv,
+                lower_blue,
+                upper_blue
+            )
+            
+            # Replace blue pixels with white
+            frame[blue_mask > 0] = (255, 255, 200)
+
+            latest_frame = frame.copy()
 
 thread = threading.Thread(target=camera_thread)
 thread.start()
@@ -152,12 +183,27 @@ class Ball:
                 img,
                 (int(self.x),int(y)),
                 self.radius,
-                (0,0,255),
+                (255,0,0),
                 -1
             )
 
     def outside(self,height):
         return self.y-self.radius > height
+
+def normalized_crop(frame, nx, ny, nw, nh):
+
+    height, width = frame.shape[:2]
+
+    x = int(nx * width)
+    y = int(ny * height)
+
+    w = int(nw * width)
+    h = int(nh * height)
+
+    return frame[
+        y:y+h,
+        x:x+w
+    ]
 
 def create_ball(width):
     return Ball(
@@ -252,7 +298,7 @@ while True:
         for contour in contours:
             area = cv2.contourArea(contour)
 
-            if area < 3000:
+            if area < 500: #3000:
                 continue
 
             perimeter = cv2.arcLength(
