@@ -22,8 +22,8 @@ def camera_thread():
 
             frame = normalized_crop(
                 frame,
-                0.28,
-                0.23,
+                0.27,
+                0.19,
                 0.46,
                 0.48
             )
